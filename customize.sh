@@ -1,0 +1,1 @@
+cp -p "$MODPATH/webroot/security.png" /data/local/tmp/
