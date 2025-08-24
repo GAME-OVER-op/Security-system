@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Security System GG - Управление пакетами</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary: #00c853;
+            --danger: #ff1744;
+            --warning: #ff9100;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-primary: #e4e4e4;
+            --text-secondary: #a0a0a0;
+            --border: #424242;
+            --transition: all 0.3s ease;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--dark-bg); color: var(--text-primary); font-family: 'Roboto', sans-serif; min-height: 100vh; display: flex; flex-direction: column; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; }
+        header { background: #000; padding: 15px 20px; border-bottom: 2px solid var(--primary); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .logo-container { display: flex; align-items: center; gap: 15px; }
+        .logo { width: 60px; height: 60px; border-radius: 50%; position: relative; overflow: hidden; box-shadow: 0 0 15px rgba(0,200,83,0.4); transition: var(--transition); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; background: #000; }
+        .logo img { width: 100%; height: 100%; object-fit: cover; display:block; }
+        /* class when svg fallback is used: center / color */
+        .logo.fallback { background: linear-gradient(135deg,#0f1113,#1a1a1a); display:flex; align-items:center; justify-content:center; }
+        .logo-text { font-weight: 700; font-size: 1.5rem; color: white; letter-spacing: 0.5px; }
+        .status-container { display:flex; align-items:center; gap:10px; background: rgba(0,200,83,0.06); padding:8px 15px; border-radius:20px; border:1px solid var(--primary); transition:var(--transition); }
+        .status-indicator { width:12px; height:12px; background:var(--primary); border-radius:50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(0,200,83,0.7);} 70% { box-shadow:0 0 0 10px rgba(0,200,83,0);} 100% { box-shadow:0 0 0 0 rgba(0,200,83,0);} }
+        .main-content { margin-top: 30px; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+        .card { background: var(--card-bg); border-radius:10px; box-shadow:0 5px 20px rgba(0,0,0,.3); overflow:hidden; margin-bottom:25px; border:1px solid var(--border); transition:var(--transition); }
+        .card-header { padding:15px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:center; background: rgba(42,42,42,0.5); }
+        .card-title { font-size:1.2rem; display:flex; align-items:center; gap:10px; }
+        .card-body { padding:25px; }
+        .file-info { display:flex; justify-content:space-between; margin-bottom:20px; color:var(--text-secondary); align-items:center; }
+        .editor-container { margin-bottom:20px; border-radius:8px; overflow:hidden; transition:var(--transition); }
+        .editor-header { background:#2a2a2a; padding:10px 15px; border:1px solid var(--border); border-bottom:none; display:flex; justify-content:space-between; align-items:center; }
+        textarea { width:100%; min-height:400px; background:#1a1a1a; color:var(--text-primary); border:1px solid var(--border); border-top:none; padding:15px; font-family:'Roboto Mono',monospace; resize:vertical; border-radius:0 0 5px 5px; transition:var(--transition); line-height:1.5; }
+        textarea:focus { outline:none; border-color:var(--primary); box-shadow: inset 0 0 5px rgba(0,200,83,0.2); }
+        .editor-hint { background:rgba(255,255,255,0.05); padding:12px 15px; border-radius:5px; margin-top:15px; color:var(--text-secondary); border-left:3px solid var(--warning); transition:var(--transition); }
+        .button-group { display:flex; gap:15px; margin-top:25px; flex-wrap:wrap; }
+        .btn { padding:12px 24px; border-radius:5px; font-weight:500; cursor:pointer; border:none; display:flex; align-items:center; gap:8px; transition:var(--transition); font-size:0.95rem; }
+        .btn-primary { background:var(--primary); color:black; }
+        .btn-secondary { background:#424242; color:var(--text-primary); }
+        .system-info { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; margin-top:30px; }
+        .info-card { background:var(--card-bg); border-radius:8px; padding:20px; border:1px solid var(--border); transition:var(--transition); animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from{opacity:0;transform:translateX(-20px);} to{opacity:1;transform:translateX(0);} }
+        .info-card h3 { font-size:1rem; margin-bottom:10px; display:flex; align-items:center; gap:8px; color:var(--text-secondary); }
+        .info-card p { font-size:1.4rem; font-weight:500; color:var(--primary); }
+        .toast-container { display:none; }
+        @media (max-width:768px) {
+            header { flex-direction:column; gap:15px; text-align:center; }
+            .file-info { flex-direction:column; gap:10px; align-items:flex-start; }
+            .button-group { flex-direction:column; }
+            .btn { width:100%; justify-content:center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="logo" id="logoWrap">
+                <!-- img будет подставлен динамически через JS (data URI), поэтому src не используем напрямую -->
+                <img id="logoImg" alt="Security System GG Logo" />
+            </div>
+            <div class="logo-text">Security System GG</div>
+        </div>
+        <div class="status-container">
+            <div class="status-indicator"></div>
+            <span>Система активна и защищает ваше устройство</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <main class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="material-icons">security</i> Управление пакетами безопасности</h2>
+                </div>
+
+                <div class="card-body">
+                    <div class="file-info">
+                        <span>Редактирование файла пакетов</span>
+                        <span>Размер: <span id="fileSize">загрузка...</span></span>
+                    </div>
+
+                    <div class="editor-container">
+                        <div class="editor-header">
+                            <div class="editor-title">packages.txt</div>
+                            <div class="editor-actions">
+                                <button id="btnValidate" class="btn btn-secondary" style="padding:8px 16px;">
+                                    <i class="material-icons">check_circle</i> Проверить синтаксис
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="packageContent" placeholder="Загрузка содержимого файла..." spellcheck="false"></textarea>
+                    </div>
+
+                    <div class="editor-hint">
+                        <i class="material-icons">info</i>
+                        Важно: последняя строка файла должна быть пустой. Не допускается более одной пустой строки в конце файла.
+                    </div>
+
+                    <div class="button-group">
+                        <button id="btnSave" class="btn btn-primary"><i class="material-icons">save</i> Сохранить изменения</button>
+                        <button id="btnReload" class="btn btn-secondary"><i class="material-icons">refresh</i> Перезагрузить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="system-info">
+                <div class="info-card">
+                    <h3><i class="material-icons">description</i> Размер файла</h3>
+                    <p id="fileSizeInfo">загрузка...</p>
+                </div>
+                <div class="info-card">
+                    <h3><i class="material-icons">list</i> Количество пакетов</h3>
+                    <p id="packageCount">загрузка...</p>
+                </div>
+                <div class="info-card">
+                    <h3><i class="material-icons">verified_user</i> Статус проверки</h3>
+                    <p id="verificationStatus">Не проверено</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script type="module">
+    import { exec as ksuExec, toast as ksuToast } from './kernelsu.js';
+
+    // Путь к логотипу (из примера): измените, если ваш логотип в другом месте
+    const LOGO_PATH = '/data/local/tmp/7.png';
+
+    // Путь к packages.txt
+    const PACKAGES_FILE = '/data/adb/modules/security_system_gg/packages.txt';
+
+    // DOM
+    const logoImg = document.getElementById('logoImg');
+    const logoWrap = document.getElementById('logoWrap');
+
+    const packageContent = document.getElementById('packageContent');
+    const btnSave = document.getElementById('btnSave');
+    const btnReload = document.getElementById('btnReload');
+    const btnValidate = document.getElementById('btnValidate');
+    const fileSizeInfo = document.getElementById('fileSizeInfo');
+    const packageCount = document.getElementById('packageCount');
+    const verificationStatus = document.getElementById('verificationStatus');
+    const fileSizeLabel = document.getElementById('fileSize');
+
+    let originalContent = '';
+
+    // Лог/тоаст (минимальный визуал отключён по дизайну) — используем nativе toast если есть
+    function showToast(message, type = 'info') {
+        try { ksuToast && ksuToast(message); } catch(e){ /*ignore*/ }
+        console.log(`[toast:${type}] ${message}`);
+    }
+
+    // Утилита: экранирование пути для single-quoted shell вставки
+    function escapeForSingleQuotes(str) {
+        return str.replace(/'/g, "'\"'\"'");
+    }
+
+    // Обёртка exec
+    async function execCmd(cmd) {
+        try {
+            const res = await ksuExec(cmd);
+            // res.expected shape: {errno, stdout, stderr}
+            return res;
+        } catch (err) {
+            throw new Error('exec error: ' + (err && err.message ? err.message : err));
+        }
+    }
+
+    // Функция загрузки логотипа в data:image
+    async function loadLogoImage() {
+        const escaped = escapeForSingleQuotes(LOGO_PATH);
+        // Попробуем несколько стратегий:
+        // 1) base64 -w 0 PATH
+        // 2) python3 -c "import base64;print(...)" (fallback)
+        // Если всё провалится — вставим SVG-заглушку.
+        try {
+            // Попытка 1: base64 -w 0 (GNU coreutils). На некоторых Android системах флаг -w может отсутствовать.
+            let cmd = `base64 -w 0 '${escaped}'`;
+            let res = await execCmd(cmd);
+            let b64 = '';
+            if (res && res.stdout && String(res.stdout).trim()) {
+                b64 = String(res.stdout).trim();
+            } else {
+                // Если stdout пуст или команда вернула stderr, пробуем c другой формой base64 (без -w)
+                // Некоторые busybox/Android base64 выводит с переносами, удалим их.
+                cmd = `base64 '${escaped}' | tr -d '\\n'`;
+                res = await execCmd(cmd);
+                if (res && res.stdout && String(res.stdout).trim()) {
+                    b64 = String(res.stdout).trim();
+                }
+            }
+
+            // Если до сих пор пусто — попытка python3
+            if (!b64) {
+                try {
+                    // Используем python3 -c (замена heredoc, проще в экранировании)
+                    const pyCmd = `python3 -c "import base64,sys;print(base64.b64encode(open('${LOGO_PATH}','rb').read()).decode())"`;
+                    const resPy = await execCmd(pyCmd);
+                    if (resPy && resPy.stdout && String(resPy.stdout).trim()) {
+                        b64 = String(resPy.stdout).trim();
+                    }
+                } catch (pyErr) {
+                    // python fallback failed - продолжим к следующему
+                    console.warn('python3 fallback failed:', pyErr);
+                }
+            }
+
+            if (b64) {
+                // Проверка длины
+                if (b64.length < 20) throw new Error('base64 output слишком короткий — возможно не изображение');
+
+                // Подставляем в img
+                logoImg.src = 'data:image/png;base64,' + b64;
+                // Убираем класс fallback, если ранее был
+                logoWrap.classList.remove('fallback');
+                showToast('Логотип загружен', 'info');
+                return;
+            } else {
+                throw new Error('Не удалось получить base64 содержимое файла логотипа');
+            }
+        } catch (err) {
+            console.warn('loadLogoImage error:', err);
+            // Вставляем SVG-заглушку и маркер fallback
+            logoWrap.classList.add('fallback');
+            logoImg.remove(); // удаляем img, чтобы показать svg внутри контейнера
+            // создаём SVG и добавляем в logoWrap
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('width', '48');
+            svg.setAttribute('height', '48');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.innerHTML = `
+                <circle cx="12" cy="12" r="11" fill="#0f1720"/>
+                <path d="M12 2 L15 8 L22 9 L17 14 L18 21 L12 18 L6 21 L7 14 L2 9 L9 8 Z" fill="#00c853" opacity="0.95"/>
+            `;
+            // Очистим контейнер и вставим svg
+            logoWrap.innerHTML = '';
+            logoWrap.appendChild(svg);
+            showToast('Не удалось загрузить логотип (используется заглушка)', 'info');
+        }
+    }
+
+    // --- functions for packages file (чит/запись) ---
+    function validateContent(content) {
+        const lines = content.split(/\r?\n/);
+        if (lines.length > 0 && lines[lines.length - 1].trim() !== '') {
+            return { valid: false, message: 'Ошибка: последняя строка должна быть пустой.' };
+        }
+        let emptyLinesCount = 0;
+        for (let i = lines.length - 1; i >= 0; i--) {
+            if (lines[i].trim() === '') emptyLinesCount++;
+            else break;
+        }
+        if (emptyLinesCount > 1) return { valid: false, message: 'Ошибка: более одной пустой строки в конце файла.' };
+        for (let i = 0; i < lines.length - emptyLinesCount; i++) {
+            const line = lines[i].trim();
+            if (line !== '' && !line.startsWith('#') && !/^[a-zA-Z0-9_.-]+$/.test(line)) {
+                return { valid: false, message: `Ошибка в строке ${i+1}: недопустимый формат имени пакета.` };
+            }
+        }
+        return { valid: true, message: 'Формат файла корректен.' };
+    }
+
+    function normalizeContent(content) {
+        let lines = content.split(/\r?\n/);
+        while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+        lines.push('');
+        return lines.join('\n');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+
+    async function readFileContentAbsolute(absPath) {
+        const escaped = escapeForSingleQuotes(absPath);
+        const cmd = `cat '${escaped}'`;
+        const res = await execCmd(cmd);
+        if (res && (res.errno === 0 || (res.stderr === '' && res.stdout !== undefined))) {
+            return res.stdout !== undefined ? res.stdout : '';
+        } else {
+            const errMsg = res && (res.stderr || res.stdout) ? (res.stderr || res.stdout) : 'Не удалось прочитать файл (errno=' + (res && res.errno) + ')';
+            throw new Error(errMsg);
+        }
+    }
+
+    async function writeFileContentAbsolute(absPath, content) {
+        function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str || ''))); }
+        const b64 = utf8ToBase64(content);
+        const escapedPath = escapeForSingleQuotes(absPath);
+        const cmd = `printf '%s' '${b64}' | base64 -d > '${escapedPath}' && chmod 644 '${escapedPath}'`;
+        const res = await execCmd(cmd);
+        if (res && (res.errno === 0 || (res.stderr === '' && res.stdout === ''))) {
+            return true;
+        } else {
+            // fallback python
+            const errMsg = (res && res.stderr) ? res.stderr : ('Запись завершилась с кодом ' + (res && res.errno));
+            try {
+                const fallbackCmd = `python3 - <<PY\nimport base64,sys\nopen('${absPath}','wb').write(base64.b64decode('${b64}'))\nPY`;
+                const res2 = await execCmd(fallbackCmd);
+                if (res2 && (res2.errno === 0 || res2.stderr === '')) {
+                    await execCmd(`chmod 644 '${escapedPath}'`);
+                    return true;
+                } else {
+                    throw new Error(errMsg + '; fallback failed: ' + (res2 && (res2.stderr || res2.stdout)));
+                }
+            } catch (fallbackErr) {
+                throw new Error('Ошибка записи: ' + errMsg + '; fallback: ' + (fallbackErr && fallbackErr.message ? fallbackErr.message : fallbackErr));
+            }
+        }
+    }
+
+    async function loadFileContent() {
+        try {
+            showToast('Загрузка содержимого файла...', 'info');
+            const content = await readFileContentAbsolute(PACKAGES_FILE);
+            originalContent = content;
+            packageContent.value = originalContent;
+            const size = new Blob([content]).size;
+            fileSizeInfo.textContent = formatFileSize(size);
+            fileSizeLabel.textContent = formatFileSize(size);
+            const lines = content.split(/\r?\n/).filter(l => { const t = l.trim(); return t !== '' && !t.startsWith('#'); });
+            packageCount.textContent = `${lines.length} пакетов`;
+            verificationStatus.textContent = 'Не проверено';
+            verificationStatus.style.color = '';
+            showToast('Файл успешно загружен', 'info');
+        } catch (err) {
+            console.error('Ошибка загрузки файла:', err);
+            showToast('Ошибка при загрузке файла: ' + (err && err.message ? err.message : err), 'error');
+            packageContent.value = "# Ошибка загрузки файла\n# Проверьте путь и права доступа";
+            fileSizeInfo.textContent = '—';
+            packageCount.textContent = '—';
+            verificationStatus.textContent = 'Ошибка загрузки';
+            verificationStatus.style.color = 'var(--danger)';
+        }
+    }
+
+    async function saveFileContent() {
+        try {
+            const content = packageContent.value;
+            const validation = validateContent(content);
+            if (!validation.valid) {
+                showToast(validation.message, 'error');
+                verificationStatus.textContent = 'Ошибка проверки';
+                verificationStatus.style.color = 'var(--danger)';
+                return;
+            }
+            showToast('Сохранение файла...', 'info');
+            const normalized = normalizeContent(content);
+            const ok = await writeFileContentAbsolute(PACKAGES_FILE, normalized);
+            if (ok) {
+                originalContent = normalized;
+                packageContent.value = normalized;
+                const size = new Blob([normalized]).size;
+                fileSizeInfo.textContent = formatFileSize(size);
+                fileSizeLabel.textContent = formatFileSize(size);
+                const lines = normalized.split(/\r?\n/).filter(l => { const t = l.trim(); return t !== '' && !t.startsWith('#'); });
+                packageCount.textContent = `${lines.length} пакетов`;
+                verificationStatus.textContent = 'Проверено';
+                verificationStatus.style.color = 'var(--primary)';
+                showToast('Файл успешно сохранён', 'info');
+            } else {
+                showToast('Ошибка при сохранении (неизвестно)', 'error');
+            }
+        } catch (err) {
+            console.error('Ошибка сохранения:', err);
+            showToast('Ошибка при сохранении: ' + (err && err.message ? err.message : err), 'error');
+        }
+    }
+
+    // UI handlers
+    btnSave.addEventListener('click', saveFileContent);
+    btnReload.addEventListener('click', () => {
+        packageContent.value = originalContent;
+        showToast('Содержимое восстановлено', 'info');
+    });
+    btnValidate.addEventListener('click', () => {
+        const validation = validateContent(packageContent.value);
+        if (validation.valid) {
+            showToast(validation.message, 'info');
+            verificationStatus.textContent = 'Проверено';
+            verificationStatus.style.color = 'var(--primary)';
+        } else {
+            showToast(validation.message, 'error');
+            verificationStatus.textContent = 'Ошибка проверки';
+            verificationStatus.style.color = 'var(--danger)';
+        }
+    });
+
+    // Инициализация: загружаем логотип и файл при старте
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadLogoImage();
+        await loadFileContent();
+    });
+    </script>
+</body>
+</html>
